@@ -1,0 +1,7 @@
+{
+  "name": "SIMAPTA_PERSONIL_V2",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}
