@@ -2,7 +2,7 @@ import HTTP from "./commonHTTP";
 
 export default {
   endpoint: "/model/v1/",
-
+  http: HTTP,
   find: function (where = {}, skip = 0, take = undefined, order_by = {}) {
     return HTTP.post(this.endpoint + "/find", {
       params: {
