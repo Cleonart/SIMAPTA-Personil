@@ -1,5 +1,6 @@
 <template>
   <ion-page>
+    <ion-loading :is-open="loading"></ion-loading>
     <ion-content :fullscreen="true">
       <!-- [START] Modal for OTP -->
       <ion-modal ref="modal" trigger="open-modal">
@@ -51,11 +52,21 @@
   </ion-page>
 </template>
 
-<script lang="ts">
-import { defineComponent, onMounted, onBeforeUnmount, ref } from "vue";
+<script>
+import { defineComponent, onMounted, ref } from "vue";
 import jsQr from "jsqr";
-import { IonPage, IonContent, IonButton } from "@ionic/vue";
-import { IonModal, IonTitle, IonInput, IonLabel } from "@ionic/vue";
+import apiUseAbsensi from "@/api/useAbsensi";
+import {
+  IonPage,
+  IonContent,
+  IonButton,
+  IonModal,
+  IonTitle,
+  IonInput,
+  IonLabel,
+  IonLoading,
+  toastController,
+} from "@ionic/vue";
 
 export default defineComponent({
   name: "Tab2Page",
@@ -67,14 +78,30 @@ export default defineComponent({
     IonTitle,
     IonInput,
     IonLabel,
+    IonLoading,
   },
   setup() {
     const modal = ref();
     const videoRef = ref();
     const canvasElem = ref();
+    const loading = ref(false);
+    const canScan = ref(true);
 
-    onMounted(() => {
+    const showWelcomeMessage = async () => {
+      setTimeout(async () => {
+        const toast = await toastController.create({
+          message: "Silahkan mendekatkan perangkat anda ke kode QR",
+          duration: 1500,
+          position: "bottom",
+          color: "dark",
+        });
+        await toast.present();
+      }, 500);
+    };
+
+    onMounted(async () => {
       canvasElem.value = document.getElementById("canvas");
+      await showWelcomeMessage();
       startScan();
     });
 
@@ -85,10 +112,10 @@ export default defineComponent({
       videoRef.value.srcObject = stream;
       videoRef.value.setAttribute("playsinline", true);
       videoRef.value.play();
-      requestAnimationFrame(tick);
+      requestAnimationFrame(resetScan);
     };
 
-    const tick = () => {
+    const getImage = () => {
       const canvas = canvasElem.value.getContext("2d");
       if (videoRef.value.readyState == videoRef.value.HAVE_ENOUGH_DATA) {
         canvasElem.value.height = videoRef.value.videoHeight;
@@ -100,20 +127,73 @@ export default defineComponent({
           canvasElem.value.width,
           canvasElem.value.height
         );
-        var imageData = canvas.getImageData(
+
+        return canvas.getImageData(
           0,
           0,
           canvasElem.value.width,
           canvasElem.value.height
         );
-        var code = jsQr(imageData.data, imageData.width, imageData.height, {
+      }
+
+      return undefined;
+    };
+
+    const processScan = async (code) => {
+      try {
+        await apiUseAbsensi.absenViaQr({
+          kodeQr: code.data,
+          token: localStorage.getItem("refresh_token"),
+        });
+        canScan.value = false;
+        setTimeout(async () => {
+          const toast = await toastController.create({
+            message: "Anda berhasil melakukan absensi",
+            duration: 4000,
+            position: "bottom",
+            color: "dark",
+          });
+          await toast.present();
+          loading.value = false;
+        }, 2000);
+        setTimeout(() => {
+          canScan.value = true;
+        }, 5000);
+      } catch (e) {
+        console.log(e);
+        canScan.value = false;
+        setTimeout(async () => {
+          loading.value = false;
+          const toast = await toastController.create({
+            message:
+              "Gagal saat melakukan absensi, token salah atau proses absensi gagal",
+            duration: 4000,
+            position: "bottom",
+            color: "dark",
+          });
+          await toast.present();
+        }, 2000);
+        setTimeout(() => {
+          canScan.value = true;
+        }, 5000);
+      }
+    };
+
+    const resetScan = async () => {
+      const imageData = getImage();
+      if (imageData) {
+        const code = jsQr(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: "dontInvert",
         });
+
         if (code && code.data) {
-          alert("CODE " + code);
+          loading.value = true;
+          if (canScan.value) {
+            await processScan(code);
+          }
         }
       }
-      requestAnimationFrame(tick);
+      requestAnimationFrame(resetScan);
     };
 
     const stopScan = () => {
@@ -129,6 +209,7 @@ export default defineComponent({
       startScan,
       stopScan,
       cancel,
+      loading,
       videoRef,
       modal,
     };

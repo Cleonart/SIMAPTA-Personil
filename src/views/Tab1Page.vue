@@ -217,7 +217,6 @@ export default defineComponent({
           posisi: element.surat_tugas.daftar_personil[0].posisi,
         });
       });
-
       tasks.value = task_list;
     };
 
