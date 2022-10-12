@@ -45,6 +45,8 @@ import {
   IonInput,
   IonItem,
   IonLoading,
+  IonContent,
+  IonButton,
   toastController,
 } from "@ionic/vue";
 import { defineComponent, onMounted, ref } from "vue";
@@ -53,7 +55,14 @@ import md5 from "md5";
 import api from "../api/auth";
 
 export default defineComponent({
-  components: { IonLabel, IonInput, IonItem, IonLoading },
+  components: {
+    IonLabel,
+    IonInput,
+    IonItem,
+    IonLoading,
+    IonContent,
+    IonButton,
+  },
   setup() {
     const username = ref("");
     const password = ref("");

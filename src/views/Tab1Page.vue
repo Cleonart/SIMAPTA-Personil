@@ -90,7 +90,12 @@
                   {{ translate[item.surat_tugas.tipe_penugasan] }}
                 </p>
                 <p>Penugasan Sebagai : {{ translate[item.posisi] }}</p>
-                <a href="">
+                <a
+                  :href="
+                    'https://simapta.web.id/api/report/warrant_letter?surat_tugas_id=' +
+                    item.surat_tugas.id
+                  "
+                >
                   <ion-button class="ion-margin-top">Unduh Surat</ion-button>
                 </a>
               </ion-label>
@@ -104,7 +109,16 @@
 
 <script>
 import { defineComponent, onMounted, ref } from "vue";
-import { IonPage, IonContent } from "@ionic/vue";
+import {
+  IonPage,
+  IonContent,
+  IonGrid,
+  IonItem,
+  IonLabel,
+  IonButton,
+  IonSpinner,
+  IonItemDivider,
+} from "@ionic/vue";
 import apiUsePersonil from "../api/usePersonil";
 import apiUseSuratTugas from "../api/useSuratTugas";
 import apiUsePatroli from "../api/usePatroli";
@@ -120,7 +134,13 @@ export default defineComponent({
     TopProfile,
     IonContent,
     IonPage,
+    IonGrid,
     PatrolCard,
+    IonItem,
+    IonLabel,
+    IonButton,
+    IonSpinner,
+    IonItemDivider,
   },
   setup() {
     const loadingState = ref(false);
