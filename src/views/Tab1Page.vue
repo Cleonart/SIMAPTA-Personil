@@ -2,6 +2,50 @@
   <ion-page>
     <ion-content :scroll-events="true">
       <TopProfile :user="user" />
+
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6">
+            <ion-card>
+              <ion-card-header>
+                <ion-card-title>Apel Pagi</ion-card-title>
+                <ion-card-subtitle>
+                  Hari ini
+                  {{ moment().format("YYYY-MM-DD") }}</ion-card-subtitle
+                >
+              </ion-card-header>
+              <ion-card-content>
+                <ion-text :color="absent.apel_pagi.color">
+                  <h1 class="title">{{ absent.apel_pagi.label }}</h1>
+                </ion-text>
+                <p style="font-size: 12px">
+                  <b>{{ absent.apel_pagi.legend }}</b>
+                </p>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+          <ion-col size="6">
+            <ion-card>
+              <ion-card-header>
+                <ion-card-title>Apel Malam</ion-card-title>
+                <ion-card-subtitle>
+                  Hari ini
+                  {{ moment().format("YYYY-MM-DD") }}</ion-card-subtitle
+                >
+              </ion-card-header>
+              <ion-card-content>
+                <ion-text :color="absent.apel_malam.color">
+                  <h1 class="title">{{ absent.apel_malam.label }}</h1>
+                </ion-text>
+                <p style="font-size: 12px">
+                  <b>{{ absent.apel_malam.legend }}</b>
+                </p>
+              </ion-card-content>
+            </ion-card>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+
       <ion-grid class="ion-padding-horizontal">
         <div class="action-header">
           <h3 class="title">Giat sedang berjalan</h3>
@@ -122,8 +166,9 @@ import {
 import apiUsePersonil from "../api/usePersonil";
 import apiUseSuratTugas from "../api/useSuratTugas";
 import apiUsePatroli from "../api/usePatroli";
+import apiUseAbsensi from "../api/useAbsensi";
 import TopProfile from "@/components/TopProfile.vue";
-import moment from "moment";
+import moment from "moment-timezone";
 import translate from "@/core/translate";
 import _ from "underscore";
 import PatrolCard from "./components/patroliCard.vue";
@@ -148,14 +193,26 @@ export default defineComponent({
     const surat_tugas = ref([]);
     const current_surat_tugas = ref([]);
     const tasks = ref([]);
+    const absent = ref({
+      apel_pagi: {
+        label: "Belum Ada",
+        legend: "DATA BELUM TERSEDIA",
+        color: "danger",
+      },
+      apel_malam: {
+        label: "Belum Ada",
+        legend: "DATA BELUM TERSEDIA",
+        color: "danger",
+      },
+    });
 
     const getUser = async () => {
       loadingState.value = true;
-      const refreshToken = localStorage.getItem("refresh_token");
+      const deviceId = localStorage.getItem("device_id");
       const userApi = await apiUsePersonil.findMany({
         where: {
           akun: {
-            refresh_token: refreshToken,
+            device_id: deviceId,
           },
         },
         include: {
@@ -167,13 +224,17 @@ export default defineComponent({
           },
         },
       });
-      if (userApi.data) {
-        user.value = userApi.data.response.records[0];
-        surat_tugas.value = user.value.surat_tugas_ids;
-        await getTask();
-        setTimeout(() => {
-          loadingState.value = false;
-        }, 500);
+      if (userApi.data && userApi.data.response) {
+        if (userApi.data.response.length > 0) {
+          user.value = userApi.data.response.records[0];
+          surat_tugas.value = user.value.surat_tugas_ids;
+          await getTask();
+          setTimeout(() => {
+            loadingState.value = false;
+          }, 500);
+        } else {
+          location.href = "/login";
+        }
       }
     };
 
@@ -240,12 +301,74 @@ export default defineComponent({
       tasks.value = task_list;
     };
 
+    const getAbsent = async () => {
+      const today = new Date(moment().format("YYYY-MM-DD"));
+      const response = await apiUseAbsensi.findMany({
+        where: {
+          personil_id: user.value.id,
+          tanggal: new Date(today),
+        },
+        limit: 2,
+      });
+      const data = response.data;
+      const result = data.response;
+
+      if (result.length > 0) {
+        const records = result.records || [];
+        const apelPagi = _.filter(records, (obj_data) => {
+          return obj_data.keterangan == "apel_pagi";
+        });
+        const apelMalam = _.filter(records, (obj_data) => {
+          return obj_data.keterangan == "apel_malam";
+        });
+
+        const presentList = ["hadir"];
+        const absentList = ["sakit", "izin", "tugas", "absen"];
+
+        if (apelPagi) {
+          const legend = apelPagi[0].status;
+          let presentStatus = "";
+          let color = "";
+          if (presentList.includes(legend)) {
+            presentStatus = "Hadir";
+            color = "success";
+          } else if (absentList.includes(legend)) {
+            presentStatus = "Tidak Hadir";
+            color = "danger";
+          }
+          absent.value.apel_pagi = {
+            label: presentStatus,
+            color: color,
+            legend: apelPagi[0].status.toUpperCase(),
+          };
+        }
+        if (apelMalam) {
+          const legend = apelMalam[0].status;
+          let presentStatus = "";
+          let color = "";
+          if (presentList.includes(legend)) {
+            presentStatus = "Hadir";
+            color = "success";
+          } else if (absentList.includes(legend)) {
+            presentStatus = "Tidak Hadir";
+            color = "danger";
+          }
+          absent.value.apel_malam = {
+            label: presentStatus,
+            color: color,
+            legend: apelMalam[0].status.toUpperCase(),
+          };
+        }
+      }
+    };
+
     onMounted(async () => {
       const refreshToken = localStorage.getItem("refresh_token");
       if (refreshToken == undefined) {
         location.href = "/login";
       }
       await getUser();
+      await getAbsent();
     });
 
     return {
@@ -257,6 +380,7 @@ export default defineComponent({
       moment,
       tasks,
       getUser,
+      absent,
     };
   },
 });

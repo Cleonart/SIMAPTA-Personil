@@ -35,7 +35,7 @@
 
 <script>
 import { defineComponent, onMounted, onUpdated, ref } from "vue";
-import { IonGrid, IonRow, IonCol } from "@ionic/vue";
+import { IonGrid, IonRow, IonCol, IonAvatar } from "@ionic/vue";
 import translate from "@/core/translate";
 
 export default defineComponent({
@@ -43,6 +43,7 @@ export default defineComponent({
     IonGrid,
     IonRow,
     IonCol,
+    IonAvatar,
   },
   props: ["user"],
   setup(props) {

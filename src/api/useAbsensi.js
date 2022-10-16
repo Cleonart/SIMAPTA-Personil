@@ -12,4 +12,12 @@ export default {
       },
     });
   },
+  absenViaToken: function ({ absent_token = null, jwt_token = null }) {
+    return HTTP.post(this.endpoint + "/absenViaToken", {
+      params: {
+        absent_token: absent_token,
+        jwt_token: jwt_token,
+      },
+    });
+  },
 };

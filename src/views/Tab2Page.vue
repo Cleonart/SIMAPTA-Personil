@@ -9,9 +9,9 @@
             <ion-title>Gunakan OTP</ion-title>
             <ion-buttons slot="end">
               <ion-button :strong="true" @click="cancel()">Batal</ion-button>
-              <ion-button :strong="true" @click="confirm()"
-                >Konfirmasi</ion-button
-              >
+              <ion-button :strong="true" @click="confirm()">
+                Konfirmasi
+              </ion-button>
             </ion-buttons>
           </ion-toolbar>
         </ion-header>
@@ -19,6 +19,7 @@
           <ion-item>
             <ion-label position="stacked">Masukan Token</ion-label>
             <ion-input
+              v-model="token"
               ref="input"
               type="text"
               placeholder="Kode Token"
@@ -86,6 +87,7 @@ export default defineComponent({
     const canvasElem = ref();
     const loading = ref(false);
     const canScan = ref(true);
+    const token = ref();
 
     const showWelcomeMessage = async () => {
       setTimeout(async () => {
@@ -205,13 +207,55 @@ export default defineComponent({
       modal.value.$el.dismiss(null, "cancel");
     };
 
+    const confirm = async () => {
+      try {
+        loading.value = true;
+        await apiUseAbsensi.absenViaToken({
+          absent_token: token.value,
+          jwt_token: localStorage.getItem("device_id"),
+        });
+        setTimeout(async () => {
+          const toast = await toastController.create({
+            message: "Anda berhasil melakukan absensi",
+            duration: 4000,
+            position: "bottom",
+            color: "dark",
+          });
+          await toast.present();
+          loading.value = false;
+        }, 2000);
+        setTimeout(() => {
+          canScan.value = true;
+        }, 5000);
+      } catch (e) {
+        console.log(e);
+        canScan.value = false;
+        setTimeout(async () => {
+          loading.value = false;
+          const toast = await toastController.create({
+            message:
+              "Gagal saat melakukan absensi, token salah atau anda sudah melakukan absensi",
+            duration: 4000,
+            position: "bottom",
+            color: "dark",
+          });
+          await toast.present();
+        }, 2000);
+        setTimeout(() => {
+          location.href = "/tabs/tab1";
+        }, 4000);
+      }
+    };
+
     return {
       startScan,
       stopScan,
       cancel,
+      confirm,
       loading,
       videoRef,
       modal,
+      token,
     };
   },
 });
