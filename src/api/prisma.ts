@@ -119,8 +119,8 @@ export default {
    * https://www.prisma.io/docs/reference/api-reference/prisma-client-reference#upsert
    */
   upsert: function ({
-    create = create,
-    update = update,
+    create = undefined,
+    update = undefined,
     where = undefined,
     select = undefined,
     include = undefined,

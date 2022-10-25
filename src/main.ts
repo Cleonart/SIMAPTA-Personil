@@ -2,6 +2,9 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 
+// Added by the CLI
+import "./registerServiceWorker";
+
 import { IonicVue } from "@ionic/vue";
 
 /* Core CSS required for Ionic components to work properly */

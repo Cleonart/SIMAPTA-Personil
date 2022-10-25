@@ -9,7 +9,11 @@ export default {
    * @param {*} kata_sandi
    * @returns
    */
-  login: function (nama_pengguna, kata_sandi, device_id) {
+  login: function (
+    nama_pengguna: string,
+    kata_sandi: string,
+    device_id: string
+  ) {
     return HTTP.post(this.endpoint + "/login_device", {
       params: {
         nama_pengguna: nama_pengguna,
@@ -19,7 +23,7 @@ export default {
     });
   },
 
-  check_page_authorization: function (token, permission) {
+  check_page_authorization: function (token: string, permission: string) {
     return HTTP.post(this.endpoint + "/check_page_authorization", {
       params: {
         token: token,
@@ -28,7 +32,7 @@ export default {
     });
   },
 
-  check_authorized_page: function (token) {
+  check_authorized_page: function (token: string) {
     return HTTP.post(this.endpoint + "/check_authorized_page", {
       params: {
         token: token,
